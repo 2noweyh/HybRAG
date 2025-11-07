@@ -11,8 +11,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_preprocess.model import TextModel
 
-# CUDA_VISIBLE_DEVICES=1 python node_retriever/dense_retriever_v2.py --dataset cwq --split trn --version v2
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Retrieve top-k relevant triples from KG')
     parser.add_argument('--dataset', type=str, choices=['webqsp', 'cwq'], required=True, help='Dataset to convert (webqsp, cwq)')
@@ -38,16 +36,10 @@ def batched_encode(text_model, texts, batch_size=32, device='cuda'):
 
 class DenseRetriever:
     def __init__(self, device='cuda'):
-        # self.model = model
         self.device = device
 
-    # def g_encoder(self, samples, k_1=10, k_2=20, lambda_=0.8, triple_sim_topk=10, hop=2):
     def g_encoder(self, samples, text_model, k_1=10, k_2=20, lambda_=0.8, triple_sim_topk=10, hop=2):
-        # query_embedding_list = samples["query_embedding"]
-        # node_attr = samples["node_attr"]
-        # edge_attr = samples["edge_attr"]
         node_names = samples["node_name"]
-        # triplet_attr = samples["triplet_attr"]
         triplet_names = samples["triplet_names"]
         edges = samples["edges"]
         query_id = samples['query_id']
@@ -67,11 +59,6 @@ class DenseRetriever:
                 # triplet_embeds = text_model(triplet_strings).detach().cpu()
                 triplet_feats = batched_encode(text_model, triplet_name, batch_size=32, device=self.device)
   
-        # for q_id, query, node_feats, node_name, edge_list, edge_feats, triplet_feats, triplet_name in tqdm(
-        #     zip(query_id, query_embedding_list, node_attr, node_names, edges, edge_attr, triplet_attr, triplet_names),
-        #     total=len(query_embedding_list),
-        #     desc="Retrieving subgraphs"):
-
             query = query.unsqueeze(0).to(self.device)
             node_feats = torch.FloatTensor(node_feats).to(self.device)
 

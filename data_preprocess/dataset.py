@@ -25,7 +25,7 @@ class KHopSubgraphDataset(Dataset):
         )
         return data
 
-class DataMapper: # RAG에 맞추어 수정 필요
+class DataMapper: 
     def __init__(self, pt_file_path):
         self.original_data = torch.load(pt_file_path)
         self.num_users = len(self.original_data.user_id_to_node)

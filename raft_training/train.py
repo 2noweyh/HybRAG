@@ -84,13 +84,11 @@ def train(
     cutoff_len: int = 4096,
     val_set_size: int = 0,
     lr_scheduler: str = "cosine",
-    #warmup_steps: int = 100,
     warmup_ratio: float = 0.1, 
     # lora hyperparams
     lora_r: int = 16,
     lora_alpha: int = 16,
     lora_dropout: float = 0.05,
-    # from peft docs: ["q_proj", "k_proj", "v_proj", "o_proj", "fc_in", "fc_out", "wte", "gate_proj", "down_proj", "up_proj"]
     lora_target_modules: List[str] = ["gate_proj", "down_proj", "up_proj"],
     # llm hyperparams
     train_on_inputs: bool = False,  # if False, masks out inputs in loss
@@ -171,7 +169,6 @@ def train(
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
     if base_model in ['microsoft/phi-2', 'NingLab/eCeLLM-S']:
-        # phi-2는 device_map='auto' 지원 안 함 → GPU 0번에 고정
         device_map = {"": int(os.environ.get("LOCAL_RANK", 0))} #    device_map={"": 0}
     else:
         if ddp:
@@ -203,7 +200,7 @@ def train(
     elif base_model.startswith("Qwen"):
         model = AutoModelForCausalLM.from_pretrained(
                 base_model,
-                trust_remote_code=True,  # 꼭 필요!
+                trust_remote_code=True,
                 torch_dtype=torch.bfloat16,
                 device_map=device_map,
             )
@@ -302,11 +299,6 @@ def train(
     trn_df = pd.DataFrame(train_dataset)
     dev_df = pd.DataFrame(dev_dataset)
 
-    # dataset = load_dataset("json", data_files=data_path)
-    # df = pd.DataFrame(dataset['train'])
-    # trn_df, dev_df = train_test_split(df, test_size=0.2, random_state=42)
-    # trn_df, dev_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df["output"])
-    # print(df["output"].value_counts())
 
     data = Dataset(pa.Table.from_pandas(trn_df))
     dev_data = Dataset(pa.Table.from_pandas(dev_df))
@@ -393,7 +385,6 @@ def train(
 
     trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     
-    # 학습 종료 후 GPU 메모리 피크 사용량 출력
     if torch.cuda.is_available():
         print("Peak memory usage (MB):", torch.cuda.max_memory_allocated() / 1024 / 1024)
 
@@ -402,15 +393,12 @@ def train(
     
     tokenizer.save_pretrained(output_dir)
 
-    # 로그 파일로 저장
+
     summary = {
         "params": params,
         "sample": sample,
         "num_tokens_k": num_tokens / 1000.0,
-        # "training_time_sec": training_time,
-        # "training_time_hr": training_time / 3600,
-        # "model_size_MB": model_size,
-        "peak_memory_MB": torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else None, # 학습 종료 후 GPU 메모리 피크 사용량
+        "peak_memory_MB": torch.cuda.max_memory_allocated() / 1024 / 1024 if torch.cuda.is_available() else None, 
     }
 
     log_file = os.path.join(output_dir, "training_summary.json")
@@ -420,13 +408,11 @@ def train(
     print(f"Saved training summary to {log_file}")
     torch.save({}, pytorch_model_path)
 
-    # 검증 성능 출력
     if val_set_size > 0:
         print("Evaluating on validation set...")
         metrics = trainer.evaluate(eval_dataset=val_data)
         trainer.log_metrics("eval", metrics)
         trainer.save_metrics("eval", metrics)
-        # print(f"Final F1 score on validation set: {metrics['eval_f1']:.4f}")
 
 
 

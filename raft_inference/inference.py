@@ -111,11 +111,9 @@ def main(
     for data in dataset:
         instructions.append(data["instruction"])
         inputs.append(data["input"])
-        options.append(data.get("options", None))  # 없으면 None
+        options.append(data.get("options", None))  
         ids.append(data["id"] if "id" in data else str(len(ids)))
 
-    # === 초기 설정 ===
-    # 1. 백업 및 기존 ID 읽기
     output_dir = os.path.dirname(output_data_path)
     if output_dir != "" and not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -136,8 +134,8 @@ def main(
 
     print(f"[INFO] Skipping {len(skipped_ids)} previously processed examples.")
 
-    checkpoint_interval = 10  # 10배치마다 저장
-    # output_mode = "a" if os.path.exists(output_data_path) else "w"
+    checkpoint_interval = 10 
+
     output_mode = "w"
     # results = []
     max_batch_size = 1
@@ -147,25 +145,17 @@ def main(
         options_batch = options[i:i + max_batch_size]
         ids_batch = ids[i:i + max_batch_size]
 
-        # === Skip already done ===
         filtered_batch = [
             (inst, inp, opt, idx) for inst, inp, opt, idx in zip(instruction_batch, input_batch, options_batch, ids_batch)
             if str(idx) not in skipped_ids
         ]
 
         if len(filtered_batch) == 0:
-            continue  # 모두 처리된 배치면 skip 
-
-        # prompts = [truncate_prompt(tokenizer, prompter.generate_prompt(inst, inp, opt),
-        #                         max_new_tokens=32, model_max_len=4096)
-        #         for inst, inp, opt, _ in filtered_batch]
-
+            continue 
 
         prompts = [prompter.generate_prompt(inst, inp, opt) for inst, inp, opt, _ in filtered_batch]
         batch_results = evaluate(prompter, prompts, tokenizer, pipe, len(filtered_batch))
     
-        # prompts = [prompter.generate_prompt(instruction, input, options) for instruction, input, options in zip(instruction_batch, input_batch, options_batch)]
-        # batch_results = evaluate(prompter, prompts, tokenizer, pipe, max_batch_size)
         id2output = {str(example["id"]): example["output"] for example in dataset}
 
         with open(output_data_path, output_mode, encoding='utf-8') as f:
@@ -177,31 +167,15 @@ def main(
                         "prediction": response
                     }
                     f.write(json.dumps(result, ensure_ascii=False) + "\n")
-        # with open(output_data_path, output_mode, encoding='utf-8') as f:
-        #     for j, response in enumerate(batch_results):
-        #         idx = i + j
-        #         result = {
-        #             "id": ids[idx],
-        #             "prediction": 1 if response.strip().lower() == "yes" else 0
-        #         }
-        #         f.write(json.dumps(result, ensure_ascii=False) + "\n")
+
 
         output_mode = "a"
         gc.collect()
         torch.cuda.empty_cache()
-
-        # === 체크포인트 저장 (.bak 하나만 유지) ===
         step = i // max_batch_size
         if step > 0 and step % checkpoint_interval == 0:
             backup_path = output_data_path + ".bak"
             shutil.copy(output_data_path, backup_path)
-            # print(f"[INFO] Checkpoint saved at step {step} → {backup_path}")
-
-    # with open(output_data_path, 'w') as f:
-    #     json.dump(results, f)
-    # with open(output_data_path, "w", encoding='utf-8') as f:
-    #     for example in results:  
-    #         f.write(json.dumps(example, ensure_ascii=False) + "\n")
 
 
 def extract_query(input_text):
@@ -230,11 +204,10 @@ def evaluate(prompter, prompts, tokenizer, pipe, batch_size):
         # num_beams=1,
         top_k=40,
         pad_token_id=tokenizer.eos_token_id,
-        eos_token_id=tokenizer.eos_token_id, # 추가
+        eos_token_id=tokenizer.eos_token_id, 
         batch_size=batch_size,
-        no_repeat_ngram_size=3, # 중복단어 막기
-        # truncation=True,         # 추가
-        # max_length=4096          # prompt+output 합쳐서 4096 제한
+        no_repeat_ngram_size=3, 
+
     )
 
     for i in range(len(generation_output)):    
