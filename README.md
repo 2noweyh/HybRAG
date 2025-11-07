@@ -1,4 +1,4 @@
-# HybRAG: Hybrid Retriever-Augmented Generation Framework
+# Hybrid Retrieval-Augmented Generation: Semantic and Structural Integration for Large Language Model Reasoning
 
 HybRAG is a **hybrid retrieval-augmented generation (RAG)** framework that integrates **semantic node-level** and **structural path-level** retrievers for knowledge-grounded reasoning and question answering (QA).  
 This repository includes all components required for preprocessing, training, inference, and evaluation of the HybRAG pipeline.
