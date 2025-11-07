@@ -1,0 +1,6 @@
+{
+    "description": "Template used by LLaMA-2 Chat.",
+    "prompt_input": "[INST] <<SYS>>\n{instruction}\n\n{options}\n\n{input} [/INST]",
+    "prompt_no_options": "[INST] <<SYS>>\n{instruction}\n\n{input} [/INST]",
+    "response_split": "[/INST]"    
+}
