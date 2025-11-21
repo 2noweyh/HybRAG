@@ -50,7 +50,6 @@ class DenseRetriever:
         for q_id, query_text, node_name, edge_list, triplet_name in tqdm(
             zip(query_id, query_texts, node_names, edges, triplet_names), total=len(query_texts), desc="Retrieving subgraphs"):
     
-            # 임베딩 계산
             with torch.no_grad():
                 # query = text_model(query_text).detach().cpu()
                 query = batched_encode(text_model, [query_text], batch_size=1, device=self.device).squeeze(0)
@@ -99,16 +98,8 @@ class DenseRetriever:
             else:
                 topk_triplets_by_node = []
 
-            # (2) Triple-level similarity top-k (based on precomputed embeddings) # 이거 제거
-            query_norm = query / query.norm(dim=-1, keepdim=True)
-            triplet_tensor = torch.FloatTensor(triplet_feats).to(self.device)
-            triplet_norm = triplet_tensor / triplet_tensor.norm(dim=-1, keepdim=True)
-            sim = F.cosine_similarity(query_norm, triplet_norm)
-            topk_sim_idx = torch.topk(sim, min(triple_sim_topk, len(sim))).indices.tolist()
-            topk_triplets_by_text = [triplet_name[i] for i in topk_sim_idx]
-
             # (5) Merge + deduplication
-            merged = list(dict.fromkeys(topk_triplets_by_node + topk_triplets_by_text))
+            merged = list(dict.fromkeys(topk_triplets_by_node))
             # textual_subgraph_dic[q_id] = "\n".join(merged)
             triplet_objects = []
             for idx, t in enumerate(merged):
